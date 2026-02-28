@@ -57,6 +57,9 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @ManyToMany(mappedBy = "participants")
+    private Set<Contest> contests = new HashSet<>();
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -101,6 +104,8 @@ public class User {
     public void setResetTokenExpiry(LocalDateTime resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
+    public Set<Contest> getContests() { return contests; }
+    public void setContests(Set<Contest> contests) { this.contests = contests; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
