@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 @Service
 @RequiredArgsConstructor
 public class ContestServiceImpl implements ContestService {
@@ -127,10 +128,7 @@ public class ContestServiceImpl implements ContestService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
         
-        List<Contest> contests = contestRepository.findByParticipants_Id(user.getId());
-        // For simplicity, return as page - in production would use proper pagination
-        Page<Contest> page = contestRepository.findAll(pageable);
-        return page.map(this::toResponse);
+        return contestRepository.findByParticipants_Id(user.getId(), pageable).map(this::toResponse);
     }
 
     @Override

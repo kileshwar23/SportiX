@@ -14,5 +14,6 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
     Page<Contest> findByCategory(String category, Pageable pageable);
     Page<Contest> findByEntryFeeBetween(Double minFee, Double maxFee, Pageable pageable);
     List<Contest> findByParticipants_Id(Long userId);
+    Page<Contest> findByParticipants_Id(Long userId, Pageable pageable);
 }
 

@@ -1,4 +1,4 @@
-package com.controller;
+package com.example.dream11backend.controller;
 
 import com.example.dream11backend.entity.User;
 import com.example.dream11backend.service.UserService;
@@ -12,7 +12,7 @@ import java.security.Principal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
