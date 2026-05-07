@@ -20,13 +20,15 @@ public class JpaConfig {
      * Falls back to "system" when no authentication context is present (e.g. during startup/data.sql).
      */
     @Bean
+    @SuppressWarnings("null")
     public AuditorAware<String> auditorProvider() {
         return () -> {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
                 return Optional.of("system");
             }
-            return Optional.of(auth.getName());
+            String name = auth.getName();
+            return Optional.of(name != null ? name : "system");
         };
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@SuppressWarnings("null")
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -40,10 +41,10 @@ public class UserService {
     public User updateUser(Long id, User updatedUser) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        
+
         user.setEmail(updatedUser.getEmail());
         user.setFullName(updatedUser.getFullName());
-        
+
         return userRepository.save(user);
     }
 
@@ -91,4 +92,3 @@ public class UserService {
         userRepository.save(user);
     }
 }
-

@@ -10,6 +10,7 @@ import com.example.dream11backend.service.dto.ContestResponse;
 import com.example.dream11backend.service.dto.ContestUpdateRequest;
 import com.example.dream11backend.service.dto.EligibilityResponse;
 import com.example.dream11backend.service.dto.UserResponse;
+import com.example.dream11backend.kafka.NotificationProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,13 +21,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+@SuppressWarnings("null")
 @Service
 @RequiredArgsConstructor
 public class ContestServiceImpl implements ContestService {
 
     private final ContestRepository contestRepository;
     private final UserRepository userRepository;
+    private final NotificationProducer notificationProducer;
 
     @Override
     @Transactional
@@ -34,7 +36,7 @@ public class ContestServiceImpl implements ContestService {
         if (request.getEntryFee() < 0) {
             throw new IllegalArgumentException("Entry fee cannot be negative");
         }
-        
+
         Contest contest = new Contest();
         contest.setName(request.getName());
         contest.setDescription(request.getDescription());
@@ -48,8 +50,9 @@ public class ContestServiceImpl implements ContestService {
         contest.setMaxTeamsPerUser(request.getMaxTeamsPerUser());
         contest.setFirstPrize(request.getFirstPrize());
         contest.setStatus("ACTIVE");
-        
+
         Contest saved = contestRepository.save(contest);
+        notificationProducer.notifyContestCreated("admin", saved.getId(), saved.getName());
         return toResponse(saved);
     }
 
@@ -70,38 +73,36 @@ public class ContestServiceImpl implements ContestService {
     public ContestResponse joinContest(Long contestId, String username) {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ContestNotFoundException(contestId));
-        
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
-        
-        // Check if contest is full
+
         if (contest.getCurrentParticipants() >= contest.getMaxParticipants()) {
             throw new ContestFullException(contestId);
         }
-        
-        // Check if contest has started
+
         if (contest.getStartTime() != null && contest.getStartTime().isBefore(LocalDateTime.now())) {
             throw new ContestAlreadyStartedException(contestId);
         }
-        
-        // Check if user already joined
+
         if (contest.getParticipants().contains(user)) {
             throw new UserAlreadyJoinedException(username, contestId);
         }
-        
-        // Check balance
+
         if (user.getBalance() < contest.getEntryFee()) {
             throw new InsufficientBalanceException(contest.getEntryFee(), user.getBalance());
         }
-        
-        // Add participant and update balance
+
         user.setBalance(user.getBalance() - contest.getEntryFee());
         userRepository.save(user);
-        
+
         contest.getParticipants().add(user);
         contest.setCurrentParticipants(contest.getCurrentParticipants() + 1);
-        
+
         Contest saved = contestRepository.save(contest);
+        notificationProducer.notifyContestJoined(
+                username, user.getEmail(),
+                saved.getId(), saved.getName(), saved.getEntryFee());
         return toResponse(saved);
     }
 
@@ -110,12 +111,14 @@ public class ContestServiceImpl implements ContestService {
     public void deleteContest(Long id) {
         Contest contest = contestRepository.findById(id)
                 .orElseThrow(() -> new ContestNotFoundException(id));
-        
+
         if ("IN_PROGRESS".equals(contest.getStatus())) {
             throw new ContestInProgressException(id);
         }
-        
+
+        String contestName = contest.getName();
         contestRepository.delete(contest);
+        notificationProducer.notifyContestDeleted("admin", id, contestName);
     }
 
     @Override
@@ -127,7 +130,7 @@ public class ContestServiceImpl implements ContestService {
     public Page<ContestResponse> getUserContests(String username, Pageable pageable) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
-        
+
         return contestRepository.findByParticipants_Id(user.getId(), pageable).map(this::toResponse);
     }
 
@@ -146,7 +149,7 @@ public class ContestServiceImpl implements ContestService {
     public ContestResponse updateContest(Long id, ContestUpdateRequest updateRequest) {
         Contest contest = contestRepository.findById(id)
                 .orElseThrow(() -> new ContestNotFoundException(id));
-        
+
         if (updateRequest.getName() != null) {
             contest.setName(updateRequest.getName());
         }
@@ -180,7 +183,7 @@ public class ContestServiceImpl implements ContestService {
         if (updateRequest.getStatus() != null) {
             contest.setStatus(updateRequest.getStatus());
         }
-        
+
         Contest saved = contestRepository.save(contest);
         return toResponse(saved);
     }
@@ -190,33 +193,35 @@ public class ContestServiceImpl implements ContestService {
     public void leaveContest(Long contestId, String username) {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ContestNotFoundException(contestId));
-        
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
-        
+
         if (!contest.getParticipants().contains(user)) {
             throw new UserNotInContestException(username, contestId);
         }
-        
+
         if (contest.getStartTime() != null && contest.getStartTime().isBefore(LocalDateTime.now())) {
             throw new ContestAlreadyStartedException(contestId);
         }
-        
-        // Refund entry fee
+
         user.setBalance(user.getBalance() + contest.getEntryFee());
         userRepository.save(user);
-        
+
         contest.getParticipants().remove(user);
         contest.setCurrentParticipants(contest.getCurrentParticipants() - 1);
-        
         contestRepository.save(contest);
+
+        notificationProducer.notifyContestLeft(
+                username, user.getEmail(),
+                contestId, contest.getName(), contest.getEntryFee());
     }
 
     @Override
     public List<UserResponse> getContestParticipants(Long contestId) {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ContestNotFoundException(contestId));
-        
+
         return contest.getParticipants().stream()
                 .map(this::toUserResponse)
                 .collect(Collectors.toList());
@@ -226,18 +231,18 @@ public class ContestServiceImpl implements ContestService {
     public EligibilityResponse checkEligibility(Long contestId, String username) {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ContestNotFoundException(contestId));
-        
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
-        
+
         boolean hasSufficientBalance = user.getBalance() >= contest.getEntryFee();
         boolean contestNotFull = contest.getCurrentParticipants() < contest.getMaxParticipants();
-        boolean contestNotStarted = contest.getStartTime() == null || 
+        boolean contestNotStarted = contest.getStartTime() == null ||
                 contest.getStartTime().isAfter(LocalDateTime.now());
         boolean notAlreadyJoined = !contest.getParticipants().contains(user);
-        
+
         boolean eligible = hasSufficientBalance && contestNotFull && contestNotStarted && notAlreadyJoined;
-        
+
         return EligibilityResponse.builder()
                 .eligible(eligible)
                 .reason(eligible ? "Eligible to join" : "Not eligible")
@@ -291,4 +296,3 @@ public class ContestServiceImpl implements ContestService {
                 .build();
     }
 }
-

@@ -15,9 +15,9 @@ public interface ContestService {
     ContestResponse createContest(ContestCreateRequest request);
     Page<ContestResponse> getAllContests(Pageable pageable);
     ContestResponse getContestById(Long id) throws ContestNotFoundException;
-    ContestResponse joinContest(Long contestId, String username) throws 
-        ContestNotFoundException, ContestFullException, 
-        ContestAlreadyStartedException, UserAlreadyJoinedException, 
+    ContestResponse joinContest(Long contestId, String username) throws
+        ContestNotFoundException, ContestFullException,
+        ContestAlreadyStartedException, UserAlreadyJoinedException,
         InsufficientBalanceException;
     void deleteContest(Long id) throws ContestNotFoundException, ContestInProgressException;
     Page<ContestResponse> getActiveContests(Pageable pageable);
@@ -25,9 +25,8 @@ public interface ContestService {
     Page<ContestResponse> getContestsByCategory(String category, Pageable pageable);
     Page<ContestResponse> getContestsByEntryFeeRange(Double minFee, Double maxFee, Pageable pageable);
     ContestResponse updateContest(Long id, ContestUpdateRequest updateRequest) throws ContestNotFoundException;
-    void leaveContest(Long contestId, String username) throws 
+    void leaveContest(Long contestId, String username) throws
         ContestNotFoundException, UserNotInContestException, ContestAlreadyStartedException;
     List<UserResponse> getContestParticipants(Long contestId) throws ContestNotFoundException;
     EligibilityResponse checkEligibility(Long contestId, String username) throws ContestNotFoundException;
 }
-

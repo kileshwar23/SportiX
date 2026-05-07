@@ -1,6 +1,8 @@
 -- Roles (idempotent)
-INSERT INTO roles (name) VALUES ('ROLE_USER')  ON CONFLICT (name) DO NOTHING;
-INSERT INTO roles (name) VALUES ('ROLE_ADMIN') ON CONFLICT (name) DO NOTHING;
+spring.datasource.url=jdbc:postgresql://db.YOUR_ACTUAL_REF.supabase.co:5432/postgres
+spring.datasource.username=postgres
+spring.datasource.password=YOUR_ACTUAL_PASSWORD
+
 
 -- Sample matches
 INSERT INTO matches (team1, team2, match_date, venue, status, created_at, updated_at)

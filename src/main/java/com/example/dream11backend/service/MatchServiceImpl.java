@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@SuppressWarnings("null")
 @Service
 @RequiredArgsConstructor
 public class MatchServiceImpl implements MatchService {
@@ -36,13 +37,13 @@ public class MatchServiceImpl implements MatchService {
     public Match updateMatch(Long id, Match updatedMatch) {
         Match existingMatch = matchRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Match not found with id: " + id));
-        
+
         existingMatch.setTeam1(updatedMatch.getTeam1());
         existingMatch.setTeam2(updatedMatch.getTeam2());
         existingMatch.setMatchDate(updatedMatch.getMatchDate());
         existingMatch.setVenue(updatedMatch.getVenue());
         existingMatch.setStatus(updatedMatch.getStatus());
-        
+
         return matchRepository.save(existingMatch);
     }
 
@@ -65,4 +66,3 @@ public class MatchServiceImpl implements MatchService {
         return matchRepository.findByStatus("LIVE");
     }
 }
-

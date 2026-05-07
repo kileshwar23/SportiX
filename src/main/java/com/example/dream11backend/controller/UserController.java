@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
+@SuppressWarnings("null")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -23,7 +24,7 @@ public class UserController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
+
         try {
             User user = userService.getUserByUsername(principal.getName());
             return ResponseEntity.ok(user);
@@ -43,19 +44,18 @@ public class UserController {
             @PathVariable Long id,
             @RequestBody User updatedUser,
             Principal principal) {
-        
+
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
+
         try {
-            // Check if user is updating their own profile
             User currentUser = userService.getUserByUsername(principal.getName());
             if (!currentUser.getId().equals(id)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("You can only update your own profile");
+                        .body("You can only update your own profile");
             }
-            
+
             User updated = userService.updateUser(id, updatedUser);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
@@ -71,7 +71,7 @@ public class UserController {
             return ResponseEntity.ok("User Deleted Successfully");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("User not found with id: " + id);
+                    .body("User not found with id: " + id);
         }
     }
 }

@@ -8,6 +8,7 @@ import com.example.dream11backend.exception.InvalidCredentialsException;
 import com.example.dream11backend.exception.UserAlreadyExistsException;
 import com.example.dream11backend.repository.RoleRepository;
 import com.example.dream11backend.repository.UserRepository;
+import com.example.dream11backend.kafka.NotificationProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationProducer notificationProducer;
 
     @Transactional
     public RegisterResponse registerUser(RegisterRequest request) {
@@ -60,6 +62,8 @@ public class AuthService {
         user.setRoles(roles);
 
         User savedUser = userRepository.save(user);
+
+        notificationProducer.notifyUserRegistered(savedUser.getUsername(), savedUser.getEmail());
 
         return RegisterResponse.builder()
                 .id(savedUser.getId())
