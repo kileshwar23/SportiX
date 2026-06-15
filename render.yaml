@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: sportix-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        value: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require
+      - key: DB_USERNAME
+        value: postgres.mmwsjvlffwtbyrskpwcx
+      - key: DB_PASSWORD
+        value: Kileshwar@12
+      - key: JWT_SECRET
+        value: mySecretKeyForJWTTokenGenerationWhichShouldBeLongEnough
+      - key: JWT_EXPIRATION
+        value: "86400000"
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        value: localhost:9092
+      - key: MAIL_USERNAME
+        value: YOUR_GMAIL@gmail.com
+      - key: MAIL_PASSWORD
+        value: YOUR_APP_PASSWORD
+      - key: MAIL_FROM
+        value: "Dream11 <YOUR_GMAIL@gmail.com>"
+      - key: PORT
+        value: "8080"

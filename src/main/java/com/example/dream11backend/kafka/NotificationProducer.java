@@ -26,7 +26,8 @@ public class NotificationProducer {
 
         future.whenComplete((result, ex) -> {
             if (ex != null) {
-                log.error("Failed to send notification event [{}] for user [{}]: {}",
+                // Kafka unavailable — log warning but never crash the app
+                log.warn("Kafka unavailable, notification skipped [{}, user={}]: {}",
                         event.getEventType(), event.getUsername(), ex.getMessage());
             } else {
                 log.info("Notification sent → topic={}, partition={}, offset={}, type={}, user={}",
